@@ -6,6 +6,6 @@ namespace SUNCGLoader {
 
     public class Config {
 
-	    public static string SUNCGDataPath = "D:/CS294/suncg_data/";
+	    public static string SUNCGDataPath = "/Users/gabemontague/Courses/FinalProject/SunCG/";
     }
 }

@@ -9,11 +9,9 @@ namespace SUNCGLoader {
 
         private House house;
 
-        private EmptyMono coRunner;
 
         public GameObject HouseToScene(House house)
         {
-            coRunner = new GameObject("CoroutineRunner").AddComponent<EmptyMono>();
             this.house = house;
             GameObject root = new GameObject("House_" + house.id);
             foreach (Level level in house.levels)
@@ -66,6 +64,9 @@ namespace SUNCGLoader {
                         nodeObj = new GameObject("Node_" + node.modelId + "f");
                         nodeObj.transform.parent = levelRoot.transform;
                         LoadNodeMesh(node, nodeObj, "f");
+                        break;
+                    default:
+                        Debug.Log($"Unhandled node type: {node.type}");
                         break;
                 }
             }
@@ -137,21 +138,32 @@ namespace SUNCGLoader {
             mat.color = c;
             if(suncgMat.texture != null)
             {
-                coRunner.StartCoroutine(LoadSunCGTextureIntoMaterial(suncgMat.texture, mat));
+                LoadSunCGTextureIntoMaterial(suncgMat.texture, mat);
             }
             return mat;
         }
 
-        private IEnumerator LoadSunCGTextureIntoMaterial(string textureName, UnityEngine.Material mat)
+        private static Texture2D LoadJPG(string filePath)
+        {
+
+            Texture2D tex = null;
+            byte[] fileData;
+
+            if (File.Exists(filePath))
+            {
+                fileData = File.ReadAllBytes(filePath);
+                tex = new Texture2D(1, 1, TextureFormat.DXT1, false);
+                _ = tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+            }
+            return tex;
+        }
+
+        private void LoadSunCGTextureIntoMaterial(string textureName, UnityEngine.Material mat)
         {
             string texturePath = Config.SUNCGDataPath + "/texture/" + textureName + ".jpg";
-            using (WWW www = new WWW(texturePath))
-            {
-                Texture2D tex = new Texture2D(1, 1, TextureFormat.DXT1, false);
-                yield return www;
-                www.LoadImageIntoTexture(tex);
-                mat.mainTexture = tex;
-            }
+
+            Texture2D tex = LoadJPG(texturePath);
+            mat.mainTexture = tex;
         }
 
         #region matrixUtilities

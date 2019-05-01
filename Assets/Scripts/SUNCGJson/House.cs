@@ -17,7 +17,7 @@ namespace SUNCGLoader
         public static House LoadFromJson(string path)
         {
             House h = JsonUtility.FromJson<House>(File.ReadAllText(path));
-            Debug.Log(h.levels.Length);
+            Debug.Log($"Number of levels: {h.levels.Length}");
             return h;
         }
 

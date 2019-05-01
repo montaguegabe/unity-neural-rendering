@@ -9,6 +9,8 @@ namespace SUNCGLoader {
 
         private House house;
 
+        private const string usedShader = "Legacy Shaders/Diffuse Fast";
+
 
         public GameObject HouseToScene(House house)
         {
@@ -91,6 +93,7 @@ namespace SUNCGLoader {
 
             MeshRenderer mr = nodeObj.AddComponent<MeshRenderer>();
             MeshFilter mf = nodeObj.AddComponent<MeshFilter>();
+
             Mesh m = new ObjImporter().ImportFile(pathToObj);
             mf.mesh = m;
             //Room meshes have no materials in JSON, they may have submeshes though
@@ -109,7 +112,7 @@ namespace SUNCGLoader {
             } else
             {
                 UnityEngine.Material[] materials = new UnityEngine.Material[m.subMeshCount];
-                UnityEngine.Material sharedMat = new UnityEngine.Material(Shader.Find("Standard"));
+                UnityEngine.Material sharedMat = new UnityEngine.Material(Shader.Find(usedShader));
                 for (int matIndex = 0; matIndex < materials.Length; matIndex++)
                 {
                     materials[matIndex] = sharedMat;
@@ -131,7 +134,7 @@ namespace SUNCGLoader {
 
         private UnityEngine.Material LoadMaterial(Material suncgMat)
         {
-            UnityEngine.Material mat = new UnityEngine.Material(Shader.Find("Standard"));
+            UnityEngine.Material mat = new UnityEngine.Material(Shader.Find(usedShader));
             mat.name = suncgMat.name;
             Color c = Color.white;
             ColorUtility.TryParseHtmlString(suncgMat.diffuse, out c);
@@ -153,7 +156,10 @@ namespace SUNCGLoader {
             {
                 fileData = File.ReadAllBytes(filePath);
                 tex = new Texture2D(1, 1, TextureFormat.DXT1, false);
-                _ = tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+                bool success = tex.LoadImage(fileData);
+                if (!success) {
+                    Debug.LogWarning("Failed to load image at " + filePath);
+                }
             }
             return tex;
         }

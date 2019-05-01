@@ -7,7 +7,7 @@ public class TestLoad : MonoBehaviour {
 
     void Start()
     {
-        House h = House.LoadFromJson("/Users/gabemontague/Courses/FinalProject/SunCG/house/00a2a04afad84b16ff330f9038a3d126/house.json");
+        House h = House.LoadFromJson("/Users/gabemontague/Courses/FinalProject/SunCG/house/0a41dad983c48b40618a56cd5772ff97/house.json");
         Loader l = new Loader();
         l.HouseToScene(h);
     }

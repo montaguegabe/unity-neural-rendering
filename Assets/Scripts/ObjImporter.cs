@@ -19,7 +19,7 @@ public class ObjImporter
         public Vector3[] vertices;
         public Vector3[] normals;
         public Vector2[] uv;
-        public Vector2[] uv1;
+        //public Vector2[] uv1;
         public Vector2[] uv2;
         public List<List<int>> trianglesPerSubmesh;
         public int[] faceVerts;

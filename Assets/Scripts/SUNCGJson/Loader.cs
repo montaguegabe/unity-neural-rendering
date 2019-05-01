@@ -9,7 +9,11 @@ namespace SUNCGLoader {
 
         private House house;
 
-        private const string usedShader = "Legacy Shaders/Diffuse Fast";
+        private const string usedShader = "Legacy Shaders/Diffuse Fast"; // "OpenGL"
+        //private const string usedShader = "Unlit/Normals"; // Normals (three channel)
+        //private const string usedShader = "Unlit/NDotV"; // "Camera-illuminated"
+        //private const string usedShader = "Unlit/Depth"; // Depth
+        //private const string usedShader = "Unlit/Albedo"; // Albedo
 
 
         public GameObject HouseToScene(House house)

@@ -11,4 +11,5 @@ namespace SUNCGLoader
         public float[] min;
         public float[] max;
     }
+
 }

@@ -15,7 +15,6 @@ namespace SUNCGLoader {
         //private const string usedShader = "Unlit/Depth"; // Depth
         //private const string usedShader = "Unlit/Albedo"; // Albedo
 
-
         public GameObject HouseToScene(House house)
         {
             this.house = house;
@@ -78,7 +77,7 @@ namespace SUNCGLoader {
             }
         }
 
-        //Returns true if sucessfully loaded
+        // Returns true if sucessfully loaded
         private bool LoadNodeMesh(Node node, GameObject nodeObj, string modelIdAppend = "")
         {
             string pathToObj = Config.SUNCGDataPath;
@@ -100,7 +99,7 @@ namespace SUNCGLoader {
 
             Mesh m = new ObjImporter().ImportFile(pathToObj);
             mf.mesh = m;
-            //Room meshes have no materials in JSON, they may have submeshes though
+            // Room meshes have no materials in JSON, they may have submeshes though
             if (node.materials != null) {
                 if (node.materials.Length > 0)
                 {
@@ -170,7 +169,7 @@ namespace SUNCGLoader {
 
         private void LoadSunCGTextureIntoMaterial(string textureName, UnityEngine.Material mat)
         {
-            string texturePath = Config.SUNCGDataPath + "/texture/" + textureName + ".jpg";
+            string texturePath = Config.SUNCGDataPath + "texture/" + textureName + ".jpg";
 
             Texture2D tex = LoadJPG(texturePath);
             mat.mainTexture = tex;

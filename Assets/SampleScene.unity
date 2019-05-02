@@ -305,7 +305,7 @@ GameObject:
   - component: {fileID: 846720639}
   - component: {fileID: 846720638}
   m_Layer: 0
-  m_Name: TestLoad
+  m_Name: Control
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -320,7 +320,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 846720637}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 518de942235d06d40bb1d095e4fbf705, type: 3}
+  m_Script: {fileID: 11500000, guid: 17c092c7ab6384f1f98feecdd61a7c6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &846720639

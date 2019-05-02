@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using SUNCGLoader;
 using System.IO;
-using System;
 
 public class Control : MonoBehaviour {
+
+    private List<GameObject> cameras = new List<GameObject>();
 
     void LoadCameras(string path) {
         string txtContents = File.ReadAllText(path);
         string[] lines = txtContents.Split(
             new[] { "\r\n", "\r", "\n" },
-            StringSplitOptions.RemoveEmptyEntries
+            System.StringSplitOptions.RemoveEmptyEntries
         );
 
         int idx = 0;
         foreach (string line in lines) {
 
             // See: https://github.com/shurans/SUNCGtoolbox/blob/4322dcf88c6ac82ef7471e76eea5ebd9db4e4f04/gaps/apps/scn2img/scn2img.cpp?fbclid=IwAR1DJ_HR4bOWjpCaYk_dmC15ucraFViGitQGWxzvk5DGYbafoF7gV7L3Sno#L235
-            var parts = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = line.Split(new char[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
             float vx = float.Parse(parts[0]);
             float vy = float.Parse(parts[1]);
             float vz = float.Parse(parts[2]);
@@ -43,14 +44,20 @@ public class Control : MonoBehaviour {
             float usedFOV = xf;
 
             GameObject newCamera = new GameObject($"Camera_{idx}");
-            Camera cameraComp = newCamera.AddComponent<Camera>();
-            cameraComp.aspect = 1.0f;
-            cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg; 
             newCamera.transform.position = position;
+            newCamera.transform.LookAt(position + towards, up);
+
+            Camera cameraComp = newCamera.AddComponent<Camera>();
+            cameraComp.enabled = false;
+            cameraComp.aspect = 1.0f;
+            cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg;
+            cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
+
+            cameras.Add(newCamera);
 
             //TODO: Set near clip and far clip based on scene
 
-            newCamera.transform.LookAt(position + towards, up);
+
             idx += 1;
         }
 
@@ -67,7 +74,44 @@ public class Control : MonoBehaviour {
     // https://docs.unity3d.com/ScriptReference/Camera.Render.html
     void RenderCameras()
     {
-        //TODO:
+        int idx = 0;
+        foreach(GameObject camera in cameras) {
+
+            const int DIM = 512;
+
+            Camera cameraComp = camera.GetComponent<Camera>();
+            string usedShader = "Unlit/Albedo";
+
+            // TODO: Should I be using 24 bit depth here?
+            // TODO: How to make RenderTextureReadWrite so that no transformation is done?
+
+            RenderTexture rTex = new RenderTexture(DIM, DIM, 24);
+            rTex.antiAliasing = 4;
+            rTex.Create();
+
+            RenderTexture rTexOld = RenderTexture.active;
+            RenderTexture.active = rTex;
+
+            cameraComp.targetTexture = rTex;
+            cameraComp.RenderWithShader(Shader.Find(usedShader), null);
+            //cameraComp.Render();
+
+            // Save to file system
+            // TODO: Problem: RGB24 has 8 bits per channel
+
+            Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
+            RenderTexture.active = rTexOld;
+
+            byte[] bytes;
+            bytes = tex.EncodeToPNG();
+
+            System.IO.File.WriteAllBytes(
+                $"{Config.SUNCGDataPath}output/render_{idx}.png", bytes);
+            rTex.Release();
+
+            idx += 1;
+        }
     }
 
     void Start()
@@ -83,5 +127,6 @@ public class Control : MonoBehaviour {
         Loader l = new Loader();
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
+        RenderCameras();
     }
 }

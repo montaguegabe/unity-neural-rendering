@@ -170,8 +170,14 @@ namespace SUNCGLoader {
         private void LoadSunCGTextureIntoMaterial(string textureName, UnityEngine.Material mat)
         {
             string texturePath = Config.SUNCGDataPath + "texture/" + textureName + ".jpg";
+            Texture2D readTex = LoadJPG(texturePath);
 
-            Texture2D tex = LoadJPG(texturePath);
+            // See: https://answers.unity.com/questions/10292/how-do-i-generate-mipmaps-at-runtime.html
+            // We need to force generation of mip maps
+            Texture2D tex = new Texture2D(readTex.width, readTex.height, TextureFormat.RGB24, true);
+            tex.SetPixels(readTex.GetPixels());
+            tex.Apply();
+            tex.filterMode = FilterMode.Trilinear;
             mat.mainTexture = tex;
         }
 

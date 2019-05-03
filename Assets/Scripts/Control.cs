@@ -50,6 +50,7 @@ public class Control : MonoBehaviour {
             Camera cameraComp = newCamera.AddComponent<Camera>();
             cameraComp.enabled = false;
             cameraComp.aspect = 1.0f;
+            cameraComp.allowMSAA = true;
             cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
             cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
 
@@ -98,8 +99,8 @@ public class Control : MonoBehaviour {
 
             // Save to file system
             // TODO: Problem: RGB24 has 8 bits per channel
-
-            Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, false);
+            // TODO: Do we want linear or SRGB? (last argument)
+            Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, true, true);
             tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
             RenderTexture.active = rTexOld;
 
@@ -128,5 +129,6 @@ public class Control : MonoBehaviour {
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
         RenderCameras();
+
     }
 }

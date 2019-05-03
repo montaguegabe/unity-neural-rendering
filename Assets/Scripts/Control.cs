@@ -50,7 +50,7 @@ public class Control : MonoBehaviour {
             Camera cameraComp = newCamera.AddComponent<Camera>();
             cameraComp.enabled = false;
             cameraComp.aspect = 1.0f;
-            cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg;
+            cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
             cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
 
             cameras.Add(newCamera);

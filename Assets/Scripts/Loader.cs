@@ -10,12 +10,6 @@ namespace SUNCGLoader {
 
         private House house;
 
-        private const string usedShader = "Legacy Shaders/Diffuse Fast"; // "OpenGL"
-        //private const string usedShader = "Unlit/Normals"; // Normals (three channel)
-        //private const string usedShader = "Unlit/NDotV"; // "Camera-illuminated"
-        //private const string usedShader = "Unlit/Depth"; // Depth
-        //private const string usedShader = "Unlit/Albedo"; // Albedo
-
         public GameObject HouseToScene(House house)
         {
             this.house = house;
@@ -101,7 +95,7 @@ namespace SUNCGLoader {
 
             nodeObj = new OBJLoader().Load(pathToObj);
 
-            // Room meshes have no transform
+            // Room meshes have no transform.
             if (node.transform != null)
             {
                 Vector4 column1 = new Vector4(node.transform[0], node.transform[1], node.transform[2], node.transform[3]);
@@ -114,12 +108,21 @@ namespace SUNCGLoader {
                 Matrix4x4 objToWorld = Matrix4x4.identity;
                 SetTransformFromMatrix(nodeObj.transform, ref objToWorld);
             }
+
+            // OBJ vs. Unity must convert between right-handed and left-handed
+            // coordinate systems via a flip of the X axis, see:
+            // https://gamedev.stackexchange.com/questions/39906/why-does-unity-obj-import-flip-my-x-coordinate
+            //nodeObj.transform.localScale = new Vector3(
+                //nodeObj.transform.localScale.x * -1.0f,
+                //nodeObj.transform.localScale.y,
+                //nodeObj.transform.localScale.z);
+
             return true;
         }
 
         private UnityEngine.Material LoadMaterial(Material suncgMat)
         {
-            UnityEngine.Material mat = new UnityEngine.Material(Shader.Find(usedShader));
+            UnityEngine.Material mat = new UnityEngine.Material(Shader.Find(Config.defaultShader));
             mat.name = suncgMat.name;
             Color c = Color.white;
             ColorUtility.TryParseHtmlString(suncgMat.diffuse, out c);

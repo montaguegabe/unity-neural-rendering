@@ -53,11 +53,10 @@ public class Control : MonoBehaviour {
             cameraComp.allowMSAA = true;
             cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
             cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
+            cameraComp.nearClipPlane = 0.1f;
+            cameraComp.farClipPlane = 100.0f;
 
             cameras.Add(newCamera);
-
-            //TODO: Set near clip and far clip based on scene
-
 
             idx += 1;
         }
@@ -78,10 +77,9 @@ public class Control : MonoBehaviour {
         int idx = 0;
         foreach(GameObject camera in cameras) {
 
-            const int DIM = 512;
+            const int DIM = Config.exportDim;
 
             Camera cameraComp = camera.GetComponent<Camera>();
-            string usedShader = "Unlit/Depth";
 
             // TODO: Should I be using 24 bit depth here?
             // TODO: How to make RenderTextureReadWrite so that no transformation is done?
@@ -94,7 +92,7 @@ public class Control : MonoBehaviour {
             RenderTexture.active = rTex;
 
             cameraComp.targetTexture = rTex;
-            cameraComp.RenderWithShader(Shader.Find(usedShader), null);
+            cameraComp.RenderWithShader(Shader.Find(Config.defaultShader), null);
             //cameraComp.Render();
 
             // Save to file system

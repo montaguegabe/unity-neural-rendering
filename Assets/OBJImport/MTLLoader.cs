@@ -157,7 +157,7 @@ public class MTLLoader {
             {
                 string materialName = processedLine.Substring(7);
 
-                var newMtl = new Material(Shader.Find("Standard (Specular setup)")) { name = materialName };
+                var newMtl = new Material(Shader.Find(SUNCGLoader.Config.defaultShader)) { name = materialName };
                 mtlDict[materialName] = newMtl;
                 currentMaterial = newMtl;
 

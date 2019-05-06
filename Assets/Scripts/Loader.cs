@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using Dummiesman;
 
 namespace SUNCGLoader { 
 
@@ -45,17 +46,19 @@ namespace SUNCGLoader {
                 switch (node.type)
                 {
                     case "Object":
-                        nodeObj = new GameObject("Node_" + node.modelId);
+                        LoadNodeMesh(node, out nodeObj);
+                        nodeObj.name = "Node_" + node.modelId;
                         nodeObj.transform.parent = levelRoot.transform;
-                        LoadNodeMesh(node, nodeObj);
+
                         break;
                     case "Room":
                         string[] wallsFloorCeiling = new string[] { "w", "f", "c" };
                         foreach (string extension in wallsFloorCeiling)
                         {
-                            nodeObj = new GameObject("Node_" + node.modelId + extension);
+                            bool loaded = LoadNodeMesh(node, out nodeObj, extension);
+                            nodeObj.name = "Node_" + node.modelId + extension;
                             nodeObj.transform.parent = levelRoot.transform;
-                            bool loaded = LoadNodeMesh(node, nodeObj, extension);
+
                             //Not all 3 exists for all
                             if (!loaded)
                             {
@@ -63,23 +66,24 @@ namespace SUNCGLoader {
                             }
                         }
                         break;
-                    case "Box":
-                        break;
                     case "Ground":
-                        nodeObj = new GameObject("Node_" + node.modelId + "f");
+                        LoadNodeMesh(node, out nodeObj, "f");
+                        nodeObj.name = "Node_" + node.modelId + "f";
                         nodeObj.transform.parent = levelRoot.transform;
-                        LoadNodeMesh(node, nodeObj, "f");
+
                         break;
                     default:
-                        Debug.Log($"Unhandled node type: {node.type}");
+                        Debug.LogError($"Unhandled node type: {node.type}");
+                        // TODO: If this ever fails due to box type being unknown we need to catch this
                         break;
                 }
             }
         }
 
-        // Returns true if sucessfully loaded
-        private bool LoadNodeMesh(Node node, GameObject nodeObj, string modelIdAppend = "")
+        // New and improved load OBJ to GameObject
+        private bool LoadNodeMesh(Node node, out GameObject nodeObj, string modelIdAppend = "")
         {
+
             string pathToObj = Config.SUNCGDataPath;
             if (node.type == "Room" || node.type == "Ground")
             {
@@ -91,38 +95,13 @@ namespace SUNCGLoader {
             }
             if (!File.Exists(pathToObj))
             {
+                nodeObj = null;
                 return false;
             }
 
-            MeshRenderer mr = nodeObj.AddComponent<MeshRenderer>();
-            MeshFilter mf = nodeObj.AddComponent<MeshFilter>();
+            nodeObj = new OBJLoader().Load(pathToObj);
 
-            Mesh m = new ObjImporter().ImportFile(pathToObj);
-            mf.mesh = m;
-            // Room meshes have no materials in JSON, they may have submeshes though
-            if (node.materials != null) {
-                if (node.materials.Length > 0)
-                {
-                    UnityEngine.Material[] materials = new UnityEngine.Material[node.materials.Length];
-                    int i = 0;
-                    foreach (Material currMat in node.materials)
-                    {
-                        materials[i] = LoadMaterial(currMat);
-                        i++;
-                    }
-                    mr.materials = materials;
-                }
-            } else
-            {
-                UnityEngine.Material[] materials = new UnityEngine.Material[m.subMeshCount];
-                UnityEngine.Material sharedMat = new UnityEngine.Material(Shader.Find(usedShader));
-                for (int matIndex = 0; matIndex < materials.Length; matIndex++)
-                {
-                    materials[matIndex] = sharedMat;
-                }
-                mr.sharedMaterials = materials;
-            }
-            //Room meshes have no transform
+            // Room meshes have no transform
             if (node.transform != null)
             {
                 Vector4 column1 = new Vector4(node.transform[0], node.transform[1], node.transform[2], node.transform[3]);
@@ -130,6 +109,9 @@ namespace SUNCGLoader {
                 Vector4 column3 = new Vector4(node.transform[8], node.transform[9], node.transform[10], node.transform[11]);
                 Vector4 column4 = new Vector4(node.transform[12], node.transform[13], node.transform[14], node.transform[15]);
                 Matrix4x4 objToWorld = new Matrix4x4(column1, column2, column3, column4);
+                SetTransformFromMatrix(nodeObj.transform, ref objToWorld);
+            } else {
+                Matrix4x4 objToWorld = Matrix4x4.identity;
                 SetTransformFromMatrix(nodeObj.transform, ref objToWorld);
             }
             return true;

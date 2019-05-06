@@ -81,7 +81,7 @@ public class Control : MonoBehaviour {
             const int DIM = 512;
 
             Camera cameraComp = camera.GetComponent<Camera>();
-            string usedShader = "Unlit/Albedo";
+            string usedShader = "Unlit/Depth";
 
             // TODO: Should I be using 24 bit depth here?
             // TODO: How to make RenderTextureReadWrite so that no transformation is done?
@@ -119,7 +119,10 @@ public class Control : MonoBehaviour {
     {
         ValidateConfig();
 
-        string houseID = "0a41dad983c48b40618a56cd5772ff97";
+        // For testing:
+        //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
+        //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
+        string houseID = "0004d52d1aeeb8ae6de39d6bd993e992"; 
 
         string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
         string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";

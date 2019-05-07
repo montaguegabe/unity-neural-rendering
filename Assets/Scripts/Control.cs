@@ -8,8 +8,10 @@ using UnityEngine.SceneManagement;
 public class Control : MonoBehaviour {
 
     private List<GameObject> cameras = new List<GameObject>();
-    int houseInd = 0;
-    bool hasFinished = false;
+
+    static int houseInd = Config.startingInd;
+    static List<string> houseIds = new List<string>();
+    static bool hasFinished = false;
 
     void LoadCameras(string path) {
         cameras.Clear();
@@ -74,6 +76,8 @@ public class Control : MonoBehaviour {
     void ValidateConfig() {
         char last = Config.SUNCGDataPath[Config.SUNCGDataPath.Length - 1];
         Debug.Assert(last == '/');
+        char last2 = Config.exportPath[Config.exportPath.Length - 1];
+        Debug.Assert(last2 == '/');
     }
 
     // Render cameras
@@ -124,7 +128,7 @@ public class Control : MonoBehaviour {
                 bytes = tex.EncodeToPNG();
 
                 System.IO.File.WriteAllBytes(
-                    $"{Config.SUNCGDataPath}output/{houseID}_{idx}_{bufferID}.png", bytes);
+                    $"{Config.exportPath}{houseID}_{idx}_{bufferID}.png", bytes);
                 rTex.Release();
             }
 
@@ -141,12 +145,22 @@ public class Control : MonoBehaviour {
         }
     }
 
-    private void ClearLoadRender(string houseID)
+    private void LoadRender(string houseID)
     {
-        ClearHouse();
 
         string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
         string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
+
+        if (!File.Exists(houseJsonPath))
+        {
+            Debug.LogWarning($"No house.json found for house {houseID}... skipping.");
+            return;
+        }
+        if (!File.Exists(houseCameraPath))
+        {
+            // Don't bother with a warning as this is more common
+            return;
+        }
 
         House h = House.LoadFromJson(houseJsonPath);
         Loader l = new Loader();
@@ -156,40 +170,49 @@ public class Control : MonoBehaviour {
 
     }
 
+
+    // This method is called for every house!
     void Start()
     {
-        Debug.Log("START CALLED");
         ValidateConfig();
-
-        // Get all the 
 
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
         //LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
         //LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
-    }
 
-    void Update()
-    {
-        // Check if finished
-        if (houseInd >= Config.houses.Length)
+        // Get houses
+        if (houseIds.Count == 0)
+        {
+            Debug.Log("Fetching big list of house IDs...");
+            houseIds = Config.GetHouses();
+            Debug.Log("House IDs loaded.");
+            Debug.Log($"Starting at index {houseInd}.");
+        }
+
+        if (houseInd >= houseIds.Count)
         {
             if (!hasFinished)
             {
-                Debug.Log("EXPORT COMPLETE");
+                Debug.Log("EXPORT COMPLETE!!");
                 hasFinished = true;
             }
             return;
         }
 
-        // Get the next house
-        string houseID = Config.houses[houseInd];
-        ClearLoadRender(houseID);
-        houseInd += 1;
         if (houseInd % 1 == 0)
         {
-            Debug.Log($"House {houseInd}/{Config.houses.Length} ({houseInd})");
+            Debug.Log($"Rendering house {houseInd}/{houseIds.Count} ({houseInd})");
         }
+
+        // Get the next house
+        string houseID = houseIds[houseInd];
+        LoadRender(houseID);
+        houseInd += 1;
+
+        // Now we clear
+        SceneManager.LoadScene("SampleScene");
     }
+
 }

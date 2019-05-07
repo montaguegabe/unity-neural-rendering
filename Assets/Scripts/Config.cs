@@ -1,18 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Linq;
 
 namespace SUNCGLoader { 
 
     public class Config {
 
 	    public const string SUNCGDataPath = "/Users/gabemontague/Courses/FinalProject/SunCG/";
-        public const string defaultShader = "Legacy Shaders/Diffuse Fast"; // "OpenGL"
+        public const string exportPath = "/Volumes/Drive/render5-6/";
+
+        // This shader is used for "OpenGL" rendering
+        public const string defaultShader = "Legacy Shaders/Diffuse Fast"; // Simple look no shadow
+
         public const int exportDim = 256;
-        //private const string defaultShader = "Unlit/Normals"; // Normals (three channel)
-        //private const string defaultShader = "Unlit/NDotV"; // "Camera-illuminated"
-        //private const string defaultShader = "Unlit/Depth"; // Depth
-        //private const string defaultShader = "Unlit/Albedo"; // Albedo
 
         public static readonly string[] renderBufferIDs = { 
             "depth",
@@ -23,10 +25,23 @@ namespace SUNCGLoader {
             "opengl"
         };
 
-        public static readonly string[] houses =
+
+        // Fetch a list of houseIDs to render
+        public static List<string> GetHouses()
         {
-            "00a2a04afad84b16ff330f9038a3d126",
-            "0004d52d1aeeb8ae6de39d6bd993e992"
-        };
+            List<string> lines = File.ReadLines($"{SUNCGDataPath}houses.txt").ToList();
+            return lines;
+        }
+
+        public const int startingInd = 0;
+
+        // Uncomment for debugging
+        //public static List<string> getHouses()
+        //{
+        //    return new List<string> {
+        //    "00a2a04afad84b16ff330f9038a3d126",
+        //    "0004d52d1aeeb8ae6de39d6bd993e992" 
+        //    };
+        //}
     }
 }

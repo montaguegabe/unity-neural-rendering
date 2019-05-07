@@ -51,11 +51,13 @@ namespace SUNCGLoader {
                         foreach (string extension in wallsFloorCeiling)
                         {
                             bool loaded = LoadNodeMesh(node, out nodeObj, extension);
-                            nodeObj.name = "Node_" + node.modelId + extension;
-                            nodeObj.transform.parent = levelRoot.transform;
-
+                            if (loaded)
+                            {
+                                nodeObj.name = "Node_" + node.modelId + extension;
+                                nodeObj.transform.parent = levelRoot.transform;
+                            }
                             //Not all 3 exists for all
-                            if (!loaded)
+                            else
                             {
                                 GameObject.Destroy(nodeObj);
                             }
@@ -66,6 +68,9 @@ namespace SUNCGLoader {
                         nodeObj.name = "Node_" + node.modelId + "f";
                         nodeObj.transform.parent = levelRoot.transform;
 
+                        break;
+                    case "Box":
+                        //TODO: This is probably not great if we can't load these
                         break;
                     default:
                         Debug.LogError($"Unhandled node type: {node.type}");

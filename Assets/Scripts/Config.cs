@@ -22,5 +22,11 @@ namespace SUNCGLoader {
             "albedo",
             "opengl"
         };
+
+        public static readonly string[] houses =
+        {
+            "00a2a04afad84b16ff330f9038a3d126",
+            "0004d52d1aeeb8ae6de39d6bd993e992"
+        };
     }
 }

@@ -8,8 +8,11 @@ using UnityEngine.SceneManagement;
 public class Control : MonoBehaviour {
 
     private List<GameObject> cameras = new List<GameObject>();
+    int houseInd = 0;
+    bool hasFinished = false;
 
     void LoadCameras(string path) {
+        cameras.Clear();
         string txtContents = File.ReadAllText(path);
         string[] lines = txtContents.Split(
             new[] { "\r\n", "\r", "\n" },
@@ -65,7 +68,7 @@ public class Control : MonoBehaviour {
         }
 
 
-        Debug.Log($"Number of poses: {lines.Length}");
+        //Debug.Log($"Number of poses: {lines.Length}");
     }
 
     void ValidateConfig() {
@@ -131,26 +134,24 @@ public class Control : MonoBehaviour {
 
     private void ClearHouse() {
         cameras.Clear();
-        //SceneManager.LoadScene("SampleScene");
         GameObject[] runtimeObjects = GameObject.FindGameObjectsWithTag("RT");
         foreach (GameObject obj in runtimeObjects)
         {
-            Object.DestroyImmediate(obj, true);
+            Object.Destroy(obj);
         }
-
     }
 
-    private void LoadAndRender(string houseID)
+    private void LoadRenderClear(string houseID)
     {
         string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
         string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
 
-        ClearHouse();
         House h = House.LoadFromJson(houseJsonPath);
         Loader l = new Loader();
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
         RenderCameras(houseID);
+        ClearHouse();
     }
 
     void Start()
@@ -158,10 +159,35 @@ public class Control : MonoBehaviour {
         Debug.Log("START CALLED");
         ValidateConfig();
 
+        // Get all the 
+
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
-        LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
-        LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
+        //LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
+        //LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
+    }
+
+    void Update()
+    {
+        // Check if finished
+        if (houseInd >= Config.houses.Length)
+        {
+            if (!hasFinished)
+            {
+                Debug.Log("EXPORT COMPLETE");
+                hasFinished = true;
+            }
+            return;
+        }
+
+        // Get the next house
+        string houseID = Config.houses[houseInd];
+        LoadRenderClear(houseID);
+        houseInd += 1;
+        if (houseInd % 1 == 0)
+        {
+            Debug.Log($"House {houseInd}/{Config.houses.Length} ({houseInd})");
+        }
     }
 }

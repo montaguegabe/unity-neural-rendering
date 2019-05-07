@@ -141,8 +141,10 @@ public class Control : MonoBehaviour {
         }
     }
 
-    private void LoadRenderClear(string houseID)
+    private void ClearLoadRender(string houseID)
     {
+        ClearHouse();
+
         string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
         string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
 
@@ -151,7 +153,7 @@ public class Control : MonoBehaviour {
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
         RenderCameras(houseID);
-        ClearHouse();
+
     }
 
     void Start()
@@ -183,7 +185,7 @@ public class Control : MonoBehaviour {
 
         // Get the next house
         string houseID = Config.houses[houseInd];
-        LoadRenderClear(houseID);
+        ClearLoadRender(houseID);
         houseInd += 1;
         if (houseInd % 1 == 0)
         {

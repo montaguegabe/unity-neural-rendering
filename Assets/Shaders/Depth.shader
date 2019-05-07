@@ -29,7 +29,7 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float value = -i.viewSpacePos.z / 20.0f;
+                float value = -i.viewSpacePos.z / 12.0f;
                 fixed4 col = fixed4(value, value, value, 1.0f);
                 return col;
             }

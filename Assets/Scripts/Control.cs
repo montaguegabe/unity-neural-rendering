@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using SUNCGLoader;
 using System.IO;
+using UnityEngine.SceneManagement;
 
 public class Control : MonoBehaviour {
 
@@ -44,6 +45,7 @@ public class Control : MonoBehaviour {
             float usedFOV = xf;
 
             GameObject newCamera = new GameObject($"Camera_{idx}");
+            newCamera.tag = "RT";
             newCamera.transform.position = position;
             newCamera.transform.LookAt(position + towards, up);
 
@@ -51,6 +53,7 @@ public class Control : MonoBehaviour {
             cameraComp.enabled = false;
             cameraComp.aspect = 1.0f;
             cameraComp.allowMSAA = true;
+            cameraComp.rect = new Rect(0.0f, 0.0f, 256.0f, 256.0f);
             cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
             cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
             cameraComp.nearClipPlane = 0.1f;
@@ -72,64 +75,93 @@ public class Control : MonoBehaviour {
 
     // Render cameras
     // https://docs.unity3d.com/ScriptReference/Camera.Render.html
-    void RenderCameras()
+    void RenderCameras(string houseID)
     {
+        const int DIM = Config.exportDim;
+
         int idx = 0;
-        foreach(GameObject camera in cameras) {
-
-            const int DIM = Config.exportDim;
-
-            Camera cameraComp = camera.GetComponent<Camera>();
+        foreach(GameObject camera2 in cameras) {
+            Camera cameraComp = camera2.GetComponent<Camera>();
 
             // TODO: Should I be using 24 bit depth here?
             // TODO: How to make RenderTextureReadWrite so that no transformation is done?
 
-            RenderTexture rTex = new RenderTexture(DIM, DIM, 24);
-            rTex.antiAliasing = 4;
-            rTex.Create();
+            // Render with each type of shader
+            string[] renderBufferIDs = Config.renderBufferIDs;
 
-            RenderTexture rTexOld = RenderTexture.active;
-            RenderTexture.active = rTex;
+            foreach (string bufferID in renderBufferIDs) {
 
-            cameraComp.targetTexture = rTex;
-            cameraComp.RenderWithShader(Shader.Find(Config.defaultShader), null);
-            //cameraComp.Render();
+                RenderTexture rTex = new RenderTexture(DIM, DIM, 24);
+                rTex.antiAliasing = 16;
+                rTex.Create();
 
-            // Save to file system
-            // TODO: Problem: RGB24 has 8 bits per channel
-            // TODO: Do we want linear or SRGB? (last argument)
-            Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, true, true);
-            tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
-            RenderTexture.active = rTexOld;
+                RenderTexture rTexOld = RenderTexture.active;
+                RenderTexture.active = rTex;
 
-            byte[] bytes;
-            bytes = tex.EncodeToPNG();
+                cameraComp.targetTexture = rTex;
 
-            System.IO.File.WriteAllBytes(
-                $"{Config.SUNCGDataPath}output/render_{idx}.png", bytes);
-            rTex.Release();
+                BufferType bt = BufferType.BufferTypeWithID(bufferID);
+                cameraComp.backgroundColor = bt.backgroundColor;
+                if (bt.shaderName != "")
+                {
+                    cameraComp.RenderWithShader(Shader.Find(bt.shaderName), null);
+                } else
+                {
+                    cameraComp.Render();
+                }
+
+                // Save to file system
+                // TODO: Problem: RGB24 has 8 bits per channel
+                // TODO: Do we want linear or SRGB? (last argument)
+                Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, true, true);
+                tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
+                RenderTexture.active = rTexOld;
+
+                byte[] bytes;
+                bytes = tex.EncodeToPNG();
+
+                System.IO.File.WriteAllBytes(
+                    $"{Config.SUNCGDataPath}output/{houseID}_{idx}_{bufferID}.png", bytes);
+                rTex.Release();
+            }
 
             idx += 1;
         }
     }
 
+    private void ClearHouse() {
+        cameras.Clear();
+        //SceneManager.LoadScene("SampleScene");
+        GameObject[] runtimeObjects = GameObject.FindGameObjectsWithTag("RT");
+        foreach (GameObject obj in runtimeObjects)
+        {
+            Object.DestroyImmediate(obj, true);
+        }
+
+    }
+
+    private void LoadAndRender(string houseID)
+    {
+        string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
+        string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
+
+        ClearHouse();
+        House h = House.LoadFromJson(houseJsonPath);
+        Loader l = new Loader();
+        l.HouseToScene(h);
+        LoadCameras(houseCameraPath);
+        RenderCameras(houseID);
+    }
+
     void Start()
     {
+        Debug.Log("START CALLED");
         ValidateConfig();
 
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
-        string houseID = "0004d52d1aeeb8ae6de39d6bd993e992"; 
-
-        string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
-        string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
-
-        House h = House.LoadFromJson(houseJsonPath);
-        Loader l = new Loader();
-        l.HouseToScene(h);
-        LoadCameras(houseCameraPath);
-        RenderCameras();
-
+        LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
+        LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
     }
 }

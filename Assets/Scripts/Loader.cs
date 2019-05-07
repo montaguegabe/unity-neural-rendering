@@ -14,6 +14,7 @@ namespace SUNCGLoader {
         {
             this.house = house;
             GameObject root = new GameObject("House_" + house.id);
+            root.tag = "RT";
             foreach (Level level in house.levels)
             {
                 LoadLevel(root, level);

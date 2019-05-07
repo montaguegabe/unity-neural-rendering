@@ -9,7 +9,9 @@ public class Control : MonoBehaviour {
 
     private List<GameObject> cameras = new List<GameObject>();
 
-    static int houseInd = Config.startingInd;
+    static int houseInd = 0;
+    static int startHouseInd = 0;
+    static int endHouseInd = 100;
     static List<string> houseIds = new List<string>();
     static bool hasFinished = false;
 
@@ -188,20 +190,33 @@ public class Control : MonoBehaviour {
             Debug.Log("Fetching big list of house IDs...");
             houseIds = Config.GetHouses();
             Debug.Log("House IDs loaded.");
+            int start;
+            int end;
+            Config.GetRange(out start, out end);
+            houseInd = start;
+            startHouseInd = start;
+            endHouseInd = end;
             Debug.Log($"Starting at index {houseInd}.");
+            Debug.Log($"Going until index {end}.");
         }
 
-        if (houseInd >= houseIds.Count)
+        if (houseInd >= houseIds.Count || houseInd >= endHouseInd)
         {
             if (!hasFinished)
             {
                 Debug.Log("EXPORT COMPLETE!!");
+
+                // Write to a file indicating completion
+                string output = $"Completed {startHouseInd} through {endHouseInd}{System.Environment.NewLine}";
+                File.AppendAllText($"{Config.SUNCGDataPath}completed.txt", output);
+                Application.Quit();
+
                 hasFinished = true;
             }
             return;
         }
 
-        if (houseInd % 1 == 0)
+        if (houseInd % Config.logEvery == 0)
         {
             Debug.Log($"Rendering house {houseInd}/{houseIds.Count} ({houseInd})");
         }
@@ -214,5 +229,7 @@ public class Control : MonoBehaviour {
         // Now we clear
         SceneManager.LoadScene("SampleScene");
     }
+
+
 
 }

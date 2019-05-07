@@ -33,7 +33,17 @@ namespace SUNCGLoader {
             return lines;
         }
 
-        public const int startingInd = 0;
+        // End is not inclusive
+        public static void GetRange(out int start, out int end)
+        {
+            List<string> lines = File.ReadLines($"{SUNCGDataPath}range.txt").ToList();
+            Debug.Assert(lines.Count >= 2);
+            start = System.Convert.ToInt32(lines[0]);
+            end = System.Convert.ToInt32(lines[1]);
+        }
+
+        // How many houses between Debug.Log'ing the status
+        public const int logEvery = 10;
 
         // Uncomment for debugging
         //public static List<string> getHouses()

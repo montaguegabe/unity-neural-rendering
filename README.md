@@ -11,3 +11,9 @@ Tool to view the SUNCG Dataset in Unity http://suncg.cs.princeton.edu/
 - Optional: For greater speed, go to File -> Build Settings, then make a build with "Development Build" switched off
 - Run this build and watch as your output directory fills with images
 - After completion the completed.txt log will be updated
+
+## To Use At Large Scale
+
+- Use Python3 to run bulk.py after modifying the paths to fit your system
+- To use bulk.py you need to build a standalone from Unity that the script can launch on its own
+- bulk.py will generate a batch of images, then zip them together and send them to another location, in my case an external volume.

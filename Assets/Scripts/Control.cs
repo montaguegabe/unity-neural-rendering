@@ -15,6 +15,14 @@ public class Control : MonoBehaviour {
 
     void LoadCameras(string path) {
         cameras.Clear();
+
+        foreach (Camera camera in Camera.allCameras) {
+          if (string.Equals(camera.name, "Main Camera")) {
+            camera.enabled = false;
+            camera.gameObject.SetActive(false);
+          }
+        }
+
         string txtContents = File.ReadAllText(path);
         string[] lines = txtContents.Split(
             new[] { "\r\n", "\r", "\n" },
@@ -22,53 +30,52 @@ public class Control : MonoBehaviour {
         );
 
         int idx = 0;
-        foreach (string line in lines) {
+        string line = lines[0];
 
-            // See: https://github.com/shurans/SUNCGtoolbox/blob/4322dcf88c6ac82ef7471e76eea5ebd9db4e4f04/gaps/apps/scn2img/scn2img.cpp?fbclid=IwAR1DJ_HR4bOWjpCaYk_dmC15ucraFViGitQGWxzvk5DGYbafoF7gV7L3Sno#L235
-            var parts = line.Split(new char[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
-            float vx = float.Parse(parts[0]);
-            float vy = float.Parse(parts[1]);
-            float vz = float.Parse(parts[2]);
-            float tx = float.Parse(parts[3]);
-            float ty = float.Parse(parts[4]);
-            float tz = float.Parse(parts[5]);
-            float ux = float.Parse(parts[6]);
-            float uy = float.Parse(parts[7]);
-            float uz = float.Parse(parts[8]);
-            float xf = float.Parse(parts[9]);
-            float yf = float.Parse(parts[10]); // we should entirely discard this value to match original code
+        // See: https://github.com/shurans/SUNCGtoolbox/blob/4322dcf88c6ac82ef7471e76eea5ebd9db4e4f04/gaps/apps/scn2img/scn2img.cpp?fbclid=IwAR1DJ_HR4bOWjpCaYk_dmC15ucraFViGitQGWxzvk5DGYbafoF7gV7L3Sno#L235
+        var parts = line.Split(new char[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+        float vx = float.Parse(parts[0]);
+        float vy = float.Parse(parts[1]);
+        float vz = float.Parse(parts[2]);
+        float tx = float.Parse(parts[3]);
+        float ty = float.Parse(parts[4]);
+        float tz = float.Parse(parts[5]);
+        float ux = float.Parse(parts[6]);
+        float uy = float.Parse(parts[7]);
+        float uz = float.Parse(parts[8]);
+        float xf = float.Parse(parts[9]);
+        float yf = float.Parse(parts[10]); // we should entirely discard this value to match original code
 
-            // Value seems like it is a measure of the camera's "goodness" of 
-            // view it presents
-            float value = float.Parse(parts[11]);
+        // Value seems like it is a measure of the camera's "goodness" of 
+        // view it presents
+        float value = float.Parse(parts[11]);
 
-            Vector3 position = new Vector3(vx, vy, vz);
-            Vector3 towards = (new Vector3(tx, ty, tz)).normalized;
-            Vector3 up = (new Vector3(ux, uy, uz)).normalized;
+        Vector3 position = new Vector3(vx, vy, vz);
+        Vector3 towards = (new Vector3(tx, ty, tz)).normalized;
+        Vector3 up = (new Vector3(ux, uy, uz)).normalized;
 
-            // TODO: Revise for non-square rendering: assumes square
-            float usedFOV = xf;
+        // TODO: Revise for non-square rendering: assumes square
+        float usedFOV = xf;
 
-            GameObject newCamera = new GameObject($"Camera_{idx}");
-            newCamera.tag = "RT";
-            newCamera.transform.position = position;
-            newCamera.transform.LookAt(position + towards, up);
+        GameObject newCamera = new GameObject($"Camera_0");
+        newCamera.tag = "MainCamera";
+        newCamera.transform.position = position;
+        newCamera.transform.LookAt(position + towards, up);
 
-            Camera cameraComp = newCamera.AddComponent<Camera>();
-            cameraComp.enabled = false;
-            cameraComp.aspect = 1.0f;
-            cameraComp.allowMSAA = true;
-            cameraComp.rect = new Rect(0.0f, 0.0f, 256.0f, 256.0f);
-            cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
-            cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
-            cameraComp.nearClipPlane = 0.1f;
-            cameraComp.farClipPlane = 100.0f;
+        Camera cameraComp = newCamera.AddComponent<Camera>();
+        cameraComp.enabled = true;
+        cameraComp.gameObject.SetActive(true);
+        cameraComp.aspect = 1.0f;
+        cameraComp.allowMSAA = true;
+        cameraComp.rect = new Rect(0.0f, 0.0f, 256.0f, 256.0f);
+        cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
+        cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
+        cameraComp.nearClipPlane = 0.1f;
+        cameraComp.farClipPlane = 100.0f;
 
-            cameras.Add(newCamera);
+        cameras.Add(newCamera);
 
-            idx += 1;
-        }
-
+        idx += 1;
 
         //Debug.Log($"Number of poses: {lines.Length}");
     }
@@ -179,10 +186,13 @@ public class Control : MonoBehaviour {
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
-        //LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
-        //LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
+        //LoadRender("00a2a04afad84b16ff330f9038a3d126");
+        LoadRender("0004d52d1aeeb8ae6de39d6bd993e992");
+        hasFinished = true;
+        return;
 
         // Get houses
+        /*
         if (houseIds.Count == 0)
         {
             Debug.Log("Fetching big list of house IDs...");
@@ -213,6 +223,6 @@ public class Control : MonoBehaviour {
 
         // Now we clear
         SceneManager.LoadScene("SampleScene");
+    */
     }
-
 }

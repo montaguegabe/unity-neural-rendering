@@ -8,8 +8,8 @@ namespace SUNCGLoader {
 
     public class Config {
 
-	    public const string SUNCGDataPath = "/Users/gabemontague/Courses/FinalProject/SunCG/";
-        public const string exportPath = "/Users/gabemontague/Courses/FinalProject/SunCG/output/";
+        public const string SUNCGDataPath = "/home/pgujjula/Documents/school/college/4_senior_year/sem2/classes/cs184/final_project/SunCG/";
+        public const string exportPath    = "/home/pgujjula/Documents/school/college/4_senior_year/sem2/classes/cs184/final_project/SunCG/output/";
 
         // This shader is used for "OpenGL" rendering
         public const string defaultShader = "Legacy Shaders/Diffuse Fast"; // Simple look no shadow

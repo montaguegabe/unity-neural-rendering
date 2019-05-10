@@ -10,6 +10,7 @@ namespace SUNCGLoader {
 
         public const string SUNCGDataPath = "/home/pgujjula/Documents/school/college/4_senior_year/sem2/classes/cs184/final_project/SunCG/";
         public const string exportPath    = "/home/pgujjula/Documents/school/college/4_senior_year/sem2/classes/cs184/final_project/SunCG/output/";
+        public const string houseID = "fffe2b0adeef7ffb6d3836404de7a640";
 
         // This shader is used for "OpenGL" rendering
         public const string defaultShader = "Legacy Shaders/Diffuse Fast"; // Simple look no shadow

@@ -17,12 +17,12 @@ public class FlyCamera : MonoBehaviour {
     space : Moves camera on X and Z axis only.  So camera doesn't gain any height*/
      
      
-    float mainSpeed = 0.4f; //regular speed
-    float shiftAdd = 0.0f; //multiplied by how long shift is held.  Basically running
-    float maxShift = 1000.0f; //Maximum speed when holdin gshift
-    float camSens = 0.25f; //How sensitive it with mouse
+    float mainSpeed = 1.0f; //regular speed
+//    float shiftAdd = 0.0f; //multiplied by how long shift is held.  Basically running
+//    float maxShift = 1000.0f; //Maximum speed when holdin gshift
+//    float camSens = 0.25f; //How sensitive it with mouse
     private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
-    private float totalRun= 1.0f;
+//    private float totalRun= 1.0f;
      
     void Update () {
       /*
@@ -35,20 +35,17 @@ public class FlyCamera : MonoBehaviour {
         //Mouse  camera angle done.  
        
         //Keyboard commands
-        float f = 0.0f;
-        Vector3 p = GetBaseInput();
+//        float f = 0.0f;
         Vector3 q = GetYRotation();
-        q = q * 0.3f;
+        q = q * 0.5f;
         transform.Rotate(q);
         Vector3 r = GetXRotation();
-        r = r * 0.3f;
+        r = r * 0.5f;
         transform.Rotate(r, Space.World);
 
 
-        p = p * mainSpeed;
-       
-        p = p * Time.deltaTime;
-
+        Vector3 p = GetBaseInput();
+        p = p * 0.03f;
         Vector3 newPosition = transform.position;
         if (Input.GetKey(KeyCode.Space)){ //If player wants to move on X and Z axis only
             transform.Translate(p);
@@ -75,6 +72,12 @@ public class FlyCamera : MonoBehaviour {
         }
         if (Input.GetKey (KeyCode.D)){
             p_Velocity += new Vector3(1, 0, 0);
+        }
+        if (Input.GetKey (KeyCode.E)){
+            p_Velocity += new Vector3(0, 1,0);
+        }
+        if (Input.GetKey (KeyCode.Q)){
+            p_Velocity += new Vector3(0, -1,0);
         }
         return p_Velocity;
     }
@@ -109,9 +112,9 @@ public class Control : MonoBehaviour {
 
     private List<GameObject> cameras = new List<GameObject>();
 
-    static int houseInd = Config.startingInd;
+//    static int houseInd = Config.startingInd;
     static List<string> houseIds = new List<string>();
-    static bool hasFinished = false;
+//    static bool hasFinished = false;
 
     void LoadCameras(string path) {
         cameras.Clear();
@@ -205,7 +208,7 @@ public class Control : MonoBehaviour {
 
     // Render cameras
     // https://docs.unity3d.com/ScriptReference/Camera.Render.html
-    void RenderCameras(string houseID)
+    void RenderCameras()
     {
         const int DIM = Config.exportDim;
 
@@ -243,6 +246,7 @@ public class Control : MonoBehaviour {
             // TODO: Problem: RGB24 has 8 bits per channel
             // TODO: Do we want linear or SRGB? (last argument)
             Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, true, true);
+            System.GC.Collect();
             tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
             RenderTexture.active = rTexOld;
 
@@ -250,8 +254,13 @@ public class Control : MonoBehaviour {
             bytes = tex.EncodeToPNG();
 
             System.IO.File.WriteAllBytes(
-                $"{Config.exportPath}{houseID}_{Time.frameCount}_{bufferID}.png", bytes);
+                $"{Config.exportPath}{Config.houseID}_{Time.frameCount}_{bufferID}.png", tex.EncodeToPNG());
             rTex.Release();
+
+            tex = null;
+            Resources.UnloadUnusedAssets();
+            rTex = null;
+            rTexOld = null;
         }
     }
 
@@ -264,15 +273,15 @@ public class Control : MonoBehaviour {
         }
     }
 
-    private void LoadRender(string houseID)
+    private void LoadRender()
     {
 
-        string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
-        string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{houseID}/room_camera.txt";
+        string houseJsonPath = $"{Config.SUNCGDataPath}house/{Config.houseID}/house.json";
+        string houseCameraPath = $"{Config.SUNCGDataPath}cameras/{Config.houseID}/room_camera.txt";
 
         if (!File.Exists(houseJsonPath))
         {
-            Debug.LogWarning($"No house.json found for house {houseID}... skipping.");
+            Debug.LogWarning($"No house.json found for house {Config.houseID}... skipping.");
             return;
         }
         if (!File.Exists(houseCameraPath))
@@ -285,7 +294,7 @@ public class Control : MonoBehaviour {
         Loader l = new Loader();
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
-        RenderCameras(houseID);
+        RenderCameras();
 
     }
 
@@ -294,14 +303,14 @@ public class Control : MonoBehaviour {
     void Start()
     {
         ValidateConfig();
-        Application.targetFrameRate = 24;
+        Application.targetFrameRate = 5;
 
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
         //LoadRender("00a2a04afad84b16ff330f9038a3d126");
-        LoadRender("0004d52d1aeeb8ae6de39d6bd993e992");
-        hasFinished = true;
+        LoadRender();
+//        hasFinished = true;
         return;
 
         // Get houses
@@ -340,6 +349,6 @@ public class Control : MonoBehaviour {
     }
 
     void Update() {
-        RenderCameras("0004d52d1aeeb8ae6de39d6bd993e992");
+        RenderCameras();
     }
 }

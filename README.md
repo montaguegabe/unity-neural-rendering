@@ -1,8 +1,9 @@
-# SUNCG GAN Rendering
-SUNCG house file loading adapted from HammadB's [SUNCGViewer](https://github.com/HammadB/SUNCGUnityViewer)
+# Neural Rendering in Unity
+![Neural rendering](peek.gif)
 
-## To Use:
+This code uses a CycleGAN model to convert simple shader renderings of interiors (depth, albedo, normals, etc) to photographic renders via Unity and TensorFlow.
 
+## Exporting Training Data:
 - Make a SUNCG directory with house, object, room, texture as subdirectories. Should also have a cameras subdirectory with camera positions
 - Move houses.txt from this repo to SUNCG directory
 - Move range.txt from this repo to SUNCG directory. Modify with the start house index on the first line and the end house index on the second (there are about 45,000 houses).
@@ -12,7 +13,7 @@ SUNCG house file loading adapted from HammadB's [SUNCGViewer](https://github.com
 - Run this build and watch as your output directory fills with images
 - After completion the completed.txt log will be updated
 
-## To Use At Large Scale
+## Export Training Data (Large Scale):
 
 - Use Python3 to run bulk.py after modifying the paths to fit your system
 - To use bulk.py you need to build a standalone from Unity that the script can launch on its own
@@ -20,3 +21,6 @@ SUNCG house file loading adapted from HammadB's [SUNCGViewer](https://github.com
 
 ## Realtime GAN Neural Rendering
 - Check out the realtime branch
+- TBC
+
+SUNCG house file loading adapted from HammadB's [SUNCGViewer](https://github.com/HammadB/SUNCGUnityViewer)

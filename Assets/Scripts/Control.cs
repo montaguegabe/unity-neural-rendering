@@ -4,16 +4,49 @@ using UnityEngine;
 using SUNCGLoader;
 using System.IO;
 using UnityEngine.SceneManagement;
+using System;
+using System.Runtime.InteropServices;
 
 public class Control : MonoBehaviour {
 
     private List<GameObject> cameras = new List<GameObject>();
 
     static int houseInd = 0;
-    static int startHouseInd = 0;
-    static int endHouseInd = 100;
     static List<string> houseIds = new List<string>();
-    static bool hasFinished = false;
+
+
+    private RenderTexture albedoRTex;
+    private RenderTexture depthRTex;
+    private RenderTexture normalsRTex;
+
+    public Texture2D albedoTex;
+    public Texture2D depthTex;
+    public Texture2D normalsTex;
+    public Texture2D outputTex;
+
+    GCHandle albedoPin;
+    GCHandle depthPin;
+    GCHandle normalsPin;
+    bool pinSet = false;
+
+    GameObject mainCamera;
+    Camera mainCameraComp;
+
+    [DllImport("RenderingPlugin")]
+    private static extern void SetTimeFromUnity(float t);
+
+    [DllImport("RenderingPlugin")]
+    private static extern void SetRenderingOn(bool t);
+
+    [DllImport("RenderingPlugin")]
+    private static extern void SetTextureFromUnity(System.IntPtr texture, int w, int h);
+
+    [DllImport("RenderingPlugin")]
+    private static extern void SetInputTexturesFromUnity(System.IntPtr albedo,
+        System.IntPtr depth, System.IntPtr normals);
+
+    [DllImport("RenderingPlugin")]
+    private static extern IntPtr GetRenderEventFunc();
 
     void LoadCameras(string path) {
         cameras.Clear();
@@ -52,27 +85,29 @@ public class Control : MonoBehaviour {
             float usedFOV = xf;
 
             GameObject newCamera = new GameObject($"Camera_{idx}");
-            newCamera.tag = "RT";
+            //newCamera.tag = "MainCamera";
             newCamera.transform.position = position;
             newCamera.transform.LookAt(position + towards, up);
 
             Camera cameraComp = newCamera.AddComponent<Camera>();
             cameraComp.enabled = false;
             cameraComp.aspect = 1.0f;
-            cameraComp.allowMSAA = true;
             cameraComp.rect = new Rect(0.0f, 0.0f, 256.0f, 256.0f);
             cameraComp.fieldOfView = usedFOV * Mathf.Rad2Deg * 2.0f;
             cameraComp.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
             cameraComp.nearClipPlane = 0.1f;
             cameraComp.farClipPlane = 100.0f;
+            cameraComp.allowMSAA = true;
 
             cameras.Add(newCamera);
+            mainCamera = newCamera;
+            mainCameraComp = cameraComp;
 
             idx += 1;
+
+            // Only load a single camera
+            break;
         }
-
-
-        //Debug.Log($"Number of poses: {lines.Length}");
     }
 
     void ValidateConfig() {
@@ -84,70 +119,45 @@ public class Control : MonoBehaviour {
 
     // Render cameras
     // https://docs.unity3d.com/ScriptReference/Camera.Render.html
-    void RenderCameras(string houseID)
+    void RenderCamera()
     {
-        const int DIM = Config.exportDim;
 
+        // Render with each type of shader
+        string[] renderBufferIDs = Config.renderBufferIDs;
         int idx = 0;
-        foreach(GameObject camera2 in cameras) {
-            Camera cameraComp = camera2.GetComponent<Camera>();
-
-            // TODO: Should I be using 24 bit depth here?
-            // TODO: How to make RenderTextureReadWrite so that no transformation is done?
-
-            // Render with each type of shader
-            string[] renderBufferIDs = Config.renderBufferIDs;
-
-            foreach (string bufferID in renderBufferIDs) {
-
-                RenderTexture rTex = new RenderTexture(DIM, DIM, 24);
-                rTex.antiAliasing = 16;
-                rTex.Create();
-
-                RenderTexture rTexOld = RenderTexture.active;
-                RenderTexture.active = rTex;
-
-                cameraComp.targetTexture = rTex;
-
-                BufferType bt = BufferType.BufferTypeWithID(bufferID);
-                cameraComp.backgroundColor = bt.backgroundColor;
-                if (bt.shaderName != "")
-                {
-                    cameraComp.RenderWithShader(Shader.Find(bt.shaderName), null);
-                } else
-                {
-                    cameraComp.Render();
-                }
-
-                // Save to file system
-                // TODO: Problem: RGB24 has 8 bits per channel
-                // TODO: Do we want linear or SRGB? (last argument)
-                Texture2D tex = new Texture2D(DIM, DIM, TextureFormat.RGB24, true, true);
-                tex.ReadPixels(new Rect(0, 0, DIM, DIM), 0, 0);
-                RenderTexture.active = rTexOld;
-
-                byte[] bytes;
-                bytes = tex.EncodeToPNG();
-
-                System.IO.File.WriteAllBytes(
-                    $"{Config.exportPath}{houseID}_{idx}_{bufferID}.png", bytes);
-                rTex.Release();
+        foreach (string bufferID in renderBufferIDs)
+        {
+            RenderTexture rTex;
+            Texture2D tex;
+            if (idx == 0)
+            {
+                rTex = albedoRTex;
+                tex = albedoTex;
+            } else if (idx == 1)
+            {
+                rTex = depthRTex;
+                tex = depthTex;
+            } else
+            {
+                rTex = normalsRTex;
+                tex = normalsTex;
             }
+
+            RenderTexture.active = rTex;
+            mainCameraComp.targetTexture = rTex;
+
+            BufferType bt = BufferType.BufferTypeWithID(bufferID);
+            mainCameraComp.backgroundColor = bt.backgroundColor;
+            mainCameraComp.RenderWithShader(Shader.Find(bt.shaderName), null);
+            tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
+            tex.Apply(); // TODO: Can remove?
 
             idx += 1;
         }
+
     }
 
-    private void ClearHouse() {
-        cameras.Clear();
-        GameObject[] runtimeObjects = GameObject.FindGameObjectsWithTag("RT");
-        foreach (GameObject obj in runtimeObjects)
-        {
-            Object.Destroy(obj);
-        }
-    }
-
-    private void LoadRender(string houseID)
+    private void LoadHouse(string houseID)
     {
 
         string houseJsonPath = $"{Config.SUNCGDataPath}house/{houseID}/house.json";
@@ -168,21 +178,34 @@ public class Control : MonoBehaviour {
         Loader l = new Loader();
         l.HouseToScene(h);
         LoadCameras(houseCameraPath);
-        RenderCameras(houseID);
 
     }
 
 
     // This method is called for every house!
-    void Start()
+    IEnumerator Start()
     {
         ValidateConfig();
+        Cursor.visible = false;
 
         // For testing:
         //   Smallest: "0004d52d1aeeb8ae6de39d6bd993e992";
         //   Broken trees/texture: "00a2a04afad84b16ff330f9038a3d126";
         //LoadAndRender("00a2a04afad84b16ff330f9038a3d126");
         //LoadAndRender("0004d52d1aeeb8ae6de39d6bd993e992");
+
+        // Create textures (TODO: 24 slows things down?)
+        albedoRTex = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
+        depthRTex = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
+        normalsRTex = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
+        albedoRTex.antiAliasing = 8;
+        depthRTex.antiAliasing = 8;
+        normalsRTex.antiAliasing = 8;
+
+        // TODO: Can get away with RGB24?
+        albedoTex = new Texture2D(256, 256, TextureFormat.ARGB32, false);
+        depthTex = new Texture2D(256, 256, TextureFormat.ARGB32, false);
+        normalsTex = new Texture2D(256, 256, TextureFormat.ARGB32, false);
 
         // Get houses
         if (houseIds.Count == 0)
@@ -194,42 +217,171 @@ public class Control : MonoBehaviour {
             int end;
             Config.GetRange(out start, out end);
             houseInd = start;
-            startHouseInd = start;
-            endHouseInd = end;
             Debug.Log($"Starting at index {houseInd}.");
-            Debug.Log($"Going until index {end}.");
-        }
-
-        if (houseInd >= houseIds.Count || houseInd >= endHouseInd)
-        {
-            if (!hasFinished)
-            {
-                Debug.Log("EXPORT COMPLETE!!");
-
-                // Write to a file indicating completion
-                string output = $"Completed {startHouseInd} through {endHouseInd}{System.Environment.NewLine}";
-                File.AppendAllText($"{Config.SUNCGDataPath}completed.txt", output);
-                Application.Quit();
-
-                hasFinished = true;
-            }
-            return;
-        }
-
-        if (houseInd % Config.logEvery == 0)
-        {
-            Debug.Log($"Rendering house {houseInd}/{houseIds.Count} ({houseInd})");
         }
 
         // Get the next house
         string houseID = houseIds[houseInd];
-        LoadRender(houseID);
-        houseInd += 1;
+        LoadHouse(houseID);
 
-        // Now we clear
-        SceneManager.LoadScene("SampleScene");
+        // Create output texture
+        outputTex = new Texture2D(256, 256, TextureFormat.RGB24, false);
+        outputTex.Apply();
+        SetTextureFromUnity(outputTex.GetNativeTexturePtr(), outputTex.width, outputTex.height);
+
+        yield return StartCoroutine("CallPluginAtEndOfFrames");
     }
 
+    private IEnumerator CallPluginAtEndOfFrames()
+    {
+        while (true)
+        {
+            // Wait until all frame rendering is done
+            yield return new WaitForEndOfFrame();
+
+            // Set time for the plugin
+            SetTimeFromUnity(Time.timeSinceLevelLoad);
+
+            // Issue a plugin event with arbitrary integer identifier.
+            // The plugin can distinguish between different
+            // things it needs to do based on this ID.
+            // For our simple plugin, it does not matter which ID we pass here.
+            GL.IssuePluginEvent(GetRenderEventFunc(), 1);
+        }
+    }
+
+    float horizontalSpeed = 2.2f;
+    float verticalSpeed = 2.2f;
+    float lat = 0.0f;
+    float lng = 90.0f;
+
+    int viewMode = 1;
+    private void Update()
+    {
+        // Exit
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            viewMode = 1;
+            SetRenderingOn(false);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            viewMode = 2;
+            SetRenderingOn(false);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            viewMode = 3;
+            SetRenderingOn(false);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            viewMode = 4;
+            SetRenderingOn(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            viewMode = 5;
+            SetRenderingOn(true);
+        }
+
+        // Move
+        Vector3 update = Vector3.zero;
+        const float moveSpeed = 2.5f;
+        if (Input.GetKey(KeyCode.W))
+        {
+            update += mainCamera.transform.forward;
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            update -= mainCamera.transform.forward;
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            update -= mainCamera.transform.right;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            update += mainCamera.transform.right;
+        }
+        if (Input.GetKey(KeyCode.Q))
+        {
+            update += Vector3.down;
+        }
+        if (Input.GetKey(KeyCode.E))
+        {
+            update += Vector3.up;
+        }
+        update.Normalize();
+        mainCamera.transform.position += update * moveSpeed * Time.deltaTime;
+
+        // Look
+        float h = horizontalSpeed * Input.GetAxis("Mouse X");
+        float v = verticalSpeed * Input.GetAxis("Mouse Y");
+        lng += h;
+        lat -= v;
+        mainCamera.transform.rotation = Quaternion.Euler(lat, lng, 0.0f);
+
+        // Render
+        RenderCamera();
+        byte[] albedoB = albedoTex.GetRawTextureData();
+        byte[] depthB = depthTex.GetRawTextureData();
+        byte[] normalsB = normalsTex.GetRawTextureData();
+
+        if (pinSet)
+        {
+            albedoPin.Free();
+            depthPin.Free();
+            normalsPin.Free();
+        }
 
 
+        albedoPin = GCHandle.Alloc(albedoB, GCHandleType.Pinned);
+        depthPin = GCHandle.Alloc(depthB, GCHandleType.Pinned);
+        normalsPin = GCHandle.Alloc(normalsB, GCHandleType.Pinned);
+        pinSet = true;
+
+        // Pass input bufers to the plugin
+        SetInputTexturesFromUnity(albedoPin.AddrOfPinnedObject(),
+            depthPin.AddrOfPinnedObject(),
+            normalsPin.AddrOfPinnedObject());
+    }
+
+    void OnGUI()
+    {
+        if (Event.current.type.Equals(EventType.Repaint))
+        {
+            float dim = Mathf.Min(Screen.width, Screen.height);
+            float halfX = (Screen.width - dim) / 2.0f;
+            float halfY = (Screen.height - dim) / 2.0f;
+            switch (viewMode)
+            {
+                case 1:
+                    Graphics.DrawTexture(new Rect(halfX, halfY, dim, dim), albedoTex);
+                    break;
+                case 2:
+                    Graphics.DrawTexture(new Rect(halfX, halfY, dim, dim), depthTex);
+                    break;
+                case 3:
+                    Graphics.DrawTexture(new Rect(halfX, halfY, dim, dim), normalsTex);
+                    break;
+                case 4:
+                    Graphics.DrawTexture(new Rect(halfX, halfY, dim, dim), outputTex);
+                    break;
+                default:
+                    float halfDim = dim * 0.5f;
+                    Graphics.DrawTexture(new Rect(halfX, halfY, halfDim, halfDim), albedoTex);
+                    Graphics.DrawTexture(new Rect(halfX + halfDim, halfY, halfDim, halfDim), depthTex);
+                    Graphics.DrawTexture(new Rect(halfX, halfY + halfDim, halfDim, halfDim), normalsTex);
+                    Graphics.DrawTexture(new Rect(halfX + halfDim, halfY + halfDim, halfDim, halfDim), outputTex);
+                    break;
+            }
+        }
+    }
 }

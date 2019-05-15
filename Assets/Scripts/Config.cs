@@ -16,13 +16,10 @@ namespace SUNCGLoader {
 
         public const int exportDim = 256;
 
-        public static readonly string[] renderBufferIDs = { 
-            "depth",
-            "depthb",
-            "normals",
-            "ndotv",
+        public static readonly string[] renderBufferIDs = {
             "albedo",
-            "opengl"
+            "depth",
+            "normals"
         };
 
 

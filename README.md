@@ -17,3 +17,6 @@ Tool to view the SUNCG Dataset in Unity http://suncg.cs.princeton.edu/
 - Use Python3 to run bulk.py after modifying the paths to fit your system
 - To use bulk.py you need to build a standalone from Unity that the script can launch on its own
 - bulk.py will generate a batch of images, then zip them together and send them to another location, in my case an external volume.
+
+## Realtime GAN Neural Rendering
+- Check out the realtime branch

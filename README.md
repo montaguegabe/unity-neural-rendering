@@ -1,5 +1,5 @@
-# SUNCGUnityViewer
-Tool to view the SUNCG Dataset in Unity http://suncg.cs.princeton.edu/
+# SUNCG GAN Rendering
+SUNCG house file loading adapted from HammadB's [SUNCGViewer](https://github.com/HammadB/SUNCGUnityViewer)
 
 ## To Use:
 
